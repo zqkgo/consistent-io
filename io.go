@@ -12,6 +12,7 @@ type writer struct {
 	key string
 }
 
+// ConsistentIO write to io.Writer(s) consistently.
 type ConsistentIO struct {
 	o *Options
 
@@ -41,7 +42,7 @@ func NewConsistentIO(opts ...opt) (*ConsistentIO, error) {
 		keys[i] = wrt.key
 	}
 
-	r := consistenthash.New(100, nil)
+	r := consistenthash.New(o.Replicas, o.Hash)
 	r.Add(keys...)
 
 	cio := &ConsistentIO{
@@ -50,4 +51,9 @@ func NewConsistentIO(opts ...opt) (*ConsistentIO, error) {
 		ring:    r,
 	}
 	return cio, nil
+}
+
+func (cio *ConsistentIO) Write(key string, p []byte) (n int, err error) {
+	w := cio.writers[cio.ring.Get(key)]
+	return w.Write(p)
 }
